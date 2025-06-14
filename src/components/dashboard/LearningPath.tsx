@@ -1,13 +1,18 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Circle, Lock } from 'lucide-react';
 import { useUserProgress } from '@/hooks/useUserProgress';
+import { useNavigate } from 'react-router-dom';
 
 export const LearningPath = () => {
   const { data: progressData, isLoading } = useUserProgress();
+  const navigate = useNavigate();
+
+  const handleContinue = (learningPathId: string, pathTitle: string) => {
+    navigate(`/terminal?pathId=${learningPathId}&pathTitle=${encodeURIComponent(pathTitle)}`);
+  };
 
   if (isLoading) {
     return (
@@ -97,6 +102,7 @@ export const LearningPath = () => {
                   size="sm" 
                   disabled={isLocked}
                   variant={isCompleted ? "outline" : "default"}
+                  onClick={() => handleContinue(path.id, path.title)}
                 >
                   {isCompleted ? 'Review' : isLocked ? 'Locked' : 'Continue'}
                 </Button>

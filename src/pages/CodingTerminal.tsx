@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,19 +13,34 @@ import {
   Sparkles,
   Copy,
   Download,
-  Save
+  Save,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'react-router-dom';
+import { useProblems } from '@/hooks/useProblems';
 
 const CodingTerminal = () => {
+  const [searchParams] = useSearchParams();
+  const pathId = searchParams.get('pathId');
+  const pathTitle = searchParams.get('pathTitle');
+  
+  const { data: problems, isLoading: problemsLoading } = useProblems(pathId || undefined);
+  const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
+  const [showSolution, setShowSolution] = useState(false);
+  
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
-  const [currentProblem, setCurrentProblem] = useState(null);
   const [isGeneratingProblem, setIsGeneratingProblem] = useState(false);
   const { toast } = useToast();
   const outputRef = useRef(null);
+
+  const currentProblem = problems && problems.length > 0 ? problems[currentProblemIndex] : null;
 
   const languages = [
     { id: 'javascript', name: 'JavaScript', extension: 'js' },
@@ -41,30 +55,30 @@ const CodingTerminal = () => {
 
   const defaultCode = {
     javascript: `// JavaScript Solution
-function twoSum(nums, target) {
-    // Your code here
+function solve() {
+    // Write your solution here
     return [];
 }
 
-// Test case
-console.log(twoSum([2, 7, 11, 15], 9));`,
+// Test your solution
+console.log(solve());`,
     python: `# Python Solution
-def two_sum(nums, target):
-    # Your code here
+def solve():
+    # Write your solution here
     return []
 
-# Test case
-print(two_sum([2, 7, 11, 15], 9))`,
+# Test your solution
+print(solve())`,
     java: `// Java Solution
 public class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Your code here
+    public int[] solve() {
+        // Write your solution here
         return new int[]{};
     }
     
     public static void main(String[] args) {
         Solution sol = new Solution();
-        int[] result = sol.twoSum(new int[]{2, 7, 11, 15}, 9);
+        int[] result = sol.solve();
         System.out.println(Arrays.toString(result));
     }
 }`,
@@ -73,14 +87,13 @@ public class Solution {
 #include <vector>
 using namespace std;
 
-vector<int> twoSum(vector<int>& nums, int target) {
-    // Your code here
+vector<int> solve() {
+    // Write your solution here
     return {};
 }
 
 int main() {
-    vector<int> nums = {2, 7, 11, 15};
-    vector<int> result = twoSum(nums, 9);
+    vector<int> result = solve();
     // Print result
     return 0;
 }`,
@@ -88,16 +101,15 @@ int main() {
 #include <stdio.h>
 #include <stdlib.h>
 
-int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
-    // Your code here
+int* solve(int* returnSize) {
+    // Write your solution here
     *returnSize = 0;
     return NULL;
 }
 
 int main() {
-    int nums[] = {2, 7, 11, 15};
     int returnSize;
-    int* result = twoSum(nums, 4, 9, &returnSize);
+    int* result = solve(&returnSize);
     return 0;
 }`,
     go: `// Go Solution
@@ -105,40 +117,54 @@ package main
 
 import "fmt"
 
-func twoSum(nums []int, target int) []int {
-    // Your code here
+func solve() []int {
+    // Write your solution here
     return []int{}
 }
 
 func main() {
-    result := twoSum([]int{2, 7, 11, 15}, 9)
+    result := solve()
     fmt.Println(result)
 }`,
     rust: `// Rust Solution
 impl Solution {
-    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
-        // Your code here
+    pub fn solve() -> Vec<i32> {
+        // Write your solution here
         vec![]
     }
 }
 
 fn main() {
-    let result = Solution::two_sum(vec![2, 7, 11, 15], 9);
+    let result = Solution::solve();
     println!("{:?}", result);
 }`,
     typescript: `// TypeScript Solution
-function twoSum(nums: number[], target: number): number[] {
-    // Your code here
+function solve(): number[] {
+    // Write your solution here
     return [];
 }
 
-// Test case
-console.log(twoSum([2, 7, 11, 15], 9));`
+// Test your solution
+console.log(solve());`
   };
 
   useEffect(() => {
     setCode(defaultCode[selectedLanguage] || '');
   }, [selectedLanguage]);
+
+  const goToPrevProblem = () => {
+    if (currentProblemIndex > 0) {
+      setCurrentProblemIndex(currentProblemIndex - 1);
+      setShowSolution(false);
+    }
+  };
+
+  const goToNextProblem = () => {
+    if (problems && currentProblemIndex < problems.length - 1) {
+      setCurrentProblemIndex(currentProblemIndex + 1);
+      setShowSolution(false);
+    }
+  };
 
   const executeJavaScript = (code) => {
     const logs = [];
@@ -197,7 +223,7 @@ console.log(twoSum([2, 7, 11, 15], 9));`
             // Handle different types of print statements
             let cleanContent = content;
             if (content.match(/^["'].*["']$/)) {
-              cleanContent = content.replace(/^["']|["']$/g, '');
+              cleanContent = content.replace(/^"|"$/g, '');
             } else if (content.includes('[') && content.includes(']')) {
               cleanContent = content; // Keep array format
             } else if (content.includes('+') || content.includes('-') || content.includes('*') || content.includes('/')) {
@@ -656,9 +682,10 @@ console.log(twoSum([2, 7, 11, 15], 9));`
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <TerminalIcon className="h-8 w-8" />
               Coding Terminal
+              {pathTitle && <span className="text-lg text-muted-foreground">- {pathTitle}</span>}
             </h1>
             <p className="text-muted-foreground mt-2">
-              Practice coding in multiple programming languages with AI-generated problems
+              {pathTitle ? 'Solve problems from your learning path' : 'Practice coding in multiple programming languages'}
             </p>
           </div>
           <Button 
@@ -675,22 +702,79 @@ console.log(twoSum([2, 7, 11, 15], 9));`
           {/* Problem Panel */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-                Problem Statement
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  Problem Statement
+                </CardTitle>
+                {problems && problems.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPrevProblem}
+                      disabled={currentProblemIndex === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {currentProblemIndex + 1} / {problems.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextProblem}
+                      disabled={currentProblemIndex === problems.length - 1}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-96">
-                {currentProblem ? (
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm">{currentProblem}</pre>
+                {problemsLoading ? (
+                  <div className="text-center py-8">Loading problems...</div>
+                ) : currentProblem ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">{currentProblem.title}</h3>
+                      <Badge variant={
+                        currentProblem.difficulty === 'Easy' ? 'default' :
+                        currentProblem.difficulty === 'Medium' ? 'secondary' : 'destructive'
+                      }>
+                        {currentProblem.difficulty}
+                      </Badge>
+                    </div>
+                    <div className="prose prose-sm max-w-none">
+                      <p className="whitespace-pre-wrap">{currentProblem.description}</p>
+                    </div>
+                    {currentProblem.solution && (
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSolution(!showSolution)}
+                          className="mb-2"
+                        >
+                          {showSolution ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                          {showSolution ? 'Hide Solution' : 'Show Solution'}
+                        </Button>
+                        {showSolution && (
+                          <div className="bg-muted p-4 rounded-md">
+                            <h4 className="font-semibold mb-2">Solution:</h4>
+                            <pre className="whitespace-pre-wrap text-sm">{currentProblem.solution}</pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground mb-4">
-                      No problem loaded yet. Generate an AI problem to get started!
+                      {pathTitle ? 'No problems found for this learning path.' : 'No problem loaded yet. Generate an AI problem to get started!'}
                     </p>
                     <Button 
                       onClick={generateProblemWithGemini}
