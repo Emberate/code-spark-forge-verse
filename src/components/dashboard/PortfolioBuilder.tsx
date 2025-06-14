@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, ExternalLink, Plus, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const PortfolioBuilder = () => {
+  const navigate = useNavigate();
+  
   const portfolioSections = [
     { name: 'Personal Info', completed: true, progress: 100 },
     { name: 'Projects', completed: false, progress: 60 },
@@ -54,7 +57,7 @@ export const PortfolioBuilder = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button className="flex-1">
+            <Button className="flex-1" onClick={() => navigate('/portfolio')}>
               Continue Building
             </Button>
             <Button variant="outline" size="sm">
