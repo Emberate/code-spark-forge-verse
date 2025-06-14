@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -174,7 +175,7 @@ console.log(twoSum([2, 7, 11, 15], 9));`
         logs.push({ type: 'return', message: typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result) });
       }
     } catch (error) {
-      logs.push({ type: 'error', message: `Error: ${error.message}` });
+      logs.push({ type: 'error', message: `SyntaxError: ${error.message}` });
     } finally {
       // Restore original console methods
       Object.assign(console, originalConsole);
@@ -184,43 +185,298 @@ console.log(twoSum([2, 7, 11, 15], 9));`
   };
 
   const executePython = (code) => {
-    // Since we can't run Python in the browser, we'll simulate execution
-    // In a real implementation, this would send to a backend service
     const logs = [];
     
     try {
-      // Simple pattern matching for basic Python syntax
+      // Enhanced Python simulation with better error handling
       if (code.includes('print(')) {
         const printMatches = code.match(/print\((.*?)\)/g);
         if (printMatches) {
           printMatches.forEach(match => {
             const content = match.replace(/print\(|\)/g, '');
-            // Remove quotes if it's a string literal
-            const cleanContent = content.replace(/^["']|["']$/g, '');
+            // Handle different types of print statements
+            let cleanContent = content;
+            if (content.match(/^["'].*["']$/)) {
+              cleanContent = content.replace(/^["']|["']$/g, '');
+            } else if (content.includes('[') && content.includes(']')) {
+              cleanContent = content; // Keep array format
+            } else if (content.includes('+') || content.includes('-') || content.includes('*') || content.includes('/')) {
+              // Simple arithmetic evaluation
+              try {
+                cleanContent = eval(content).toString();
+              } catch {
+                cleanContent = content;
+              }
+            }
             logs.push({ type: 'log', message: cleanContent });
           });
         }
       }
-      
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Python code executed (simulated)' });
+
+      // Check for syntax errors
+      if (code.includes('def ') && !code.includes(':')) {
+        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after function definition' });
+      } else if (code.includes('if ') && !code.includes(':')) {
+        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after if statement' });
+      } else if (code.includes('for ') && !code.includes(':')) {
+        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after for loop' });
+      } else if (logs.length === 0 && !code.trim()) {
+        logs.push({ type: 'info', message: 'No output' });
+      } else if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'Python code executed successfully (simulated)' });
       }
     } catch (error) {
-      logs.push({ type: 'error', message: `Python Error: ${error.message}` });
+      logs.push({ type: 'error', message: `Python RuntimeError: ${error.message}` });
+    }
+
+    return logs;
+  };
+
+  const executeJava = (code) => {
+    const logs = [];
+    
+    try {
+      // Java compilation and runtime error simulation
+      if (!code.includes('class ')) {
+        logs.push({ type: 'error', message: 'Error: Main method not found in class, please define the main method as: public static void main(String[] args)' });
+        return logs;
+      }
+
+      if (!code.includes('public static void main')) {
+        logs.push({ type: 'error', message: 'Error: Main method not found in class, please define the main method as: public static void main(String[] args)' });
+        return logs;
+      }
+
+      // Check for System.out.println
+      if (code.includes('System.out.println(')) {
+        const printMatches = code.match(/System\.out\.println\((.*?)\);?/g);
+        if (printMatches) {
+          printMatches.forEach(match => {
+            const content = match.replace(/System\.out\.println\(|\);?/g, '');
+            let cleanContent = content;
+            if (content.match(/^".*"$/)) {
+              cleanContent = content.replace(/^"|"$/g, '');
+            }
+            logs.push({ type: 'log', message: cleanContent });
+          });
+        }
+      }
+
+      // Check for missing semicolons
+      const lines = code.split('\n');
+      lines.forEach((line, index) => {
+        if (line.trim() && 
+            !line.trim().endsWith(';') && 
+            !line.trim().endsWith('{') && 
+            !line.trim().endsWith('}') && 
+            !line.trim().startsWith('//') &&
+            !line.trim().startsWith('public') &&
+            !line.trim().startsWith('private') &&
+            !line.trim().startsWith('import') &&
+            !line.trim().startsWith('package') &&
+            line.trim() !== '') {
+          logs.push({ type: 'error', message: `Error: ';' expected at line ${index + 1}` });
+          return logs;
+        }
+      });
+
+      if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'Java code compiled and executed successfully (simulated)' });
+      }
+    } catch (error) {
+      logs.push({ type: 'error', message: `Java CompileError: ${error.message}` });
+    }
+
+    return logs;
+  };
+
+  const executeCpp = (code) => {
+    const logs = [];
+    
+    try {
+      if (!code.includes('#include')) {
+        logs.push({ type: 'error', message: 'Error: No include statements found' });
+        return logs;
+      }
+
+      if (!code.includes('int main()')) {
+        logs.push({ type: 'error', message: 'Error: undefined reference to main function' });
+        return logs;
+      }
+
+      // Check for cout statements
+      if (code.includes('cout')) {
+        const coutMatches = code.match(/cout\s*<<\s*(.*?)\s*;/g);
+        if (coutMatches) {
+          coutMatches.forEach(match => {
+            const content = match.replace(/cout\s*<<\s*|\s*;/g, '');
+            let cleanContent = content;
+            if (content.match(/^".*"$/)) {
+              cleanContent = content.replace(/^"|"$/g, '');
+            } else if (content === 'endl') {
+              cleanContent = '\n';
+            }
+            logs.push({ type: 'log', message: cleanContent });
+          });
+        }
+      }
+
+      // Check for missing semicolons
+      if (code.includes('cout') && !code.includes('cout') + ';') {
+        const lines = code.split('\n');
+        lines.forEach((line, index) => {
+          if (line.includes('cout') && !line.includes(';')) {
+            logs.push({ type: 'error', message: `Error: expected ';' at line ${index + 1}` });
+            return logs;
+          }
+        });
+      }
+
+      if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'C++ code compiled and executed successfully (simulated)' });
+      }
+    } catch (error) {
+      logs.push({ type: 'error', message: `C++ CompileError: ${error.message}` });
+    }
+
+    return logs;
+  };
+
+  const executeC = (code) => {
+    const logs = [];
+    
+    try {
+      if (!code.includes('#include')) {
+        logs.push({ type: 'error', message: 'Error: No include statements found' });
+        return logs;
+      }
+
+      if (!code.includes('int main()')) {
+        logs.push({ type: 'error', message: 'Error: undefined reference to main function' });
+        return logs;
+      }
+
+      // Check for printf statements
+      if (code.includes('printf(')) {
+        const printfMatches = code.match(/printf\((.*?)\);?/g);
+        if (printfMatches) {
+          printfMatches.forEach(match => {
+            const content = match.replace(/printf\(|\);?/g, '');
+            let cleanContent = content;
+            if (content.match(/^".*"$/)) {
+              cleanContent = content.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+            }
+            logs.push({ type: 'log', message: cleanContent });
+          });
+        }
+      }
+
+      if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'C code compiled and executed successfully (simulated)' });
+      }
+    } catch (error) {
+      logs.push({ type: 'error', message: `C CompileError: ${error.message}` });
+    }
+
+    return logs;
+  };
+
+  const executeGo = (code) => {
+    const logs = [];
+    
+    try {
+      if (!code.includes('package main')) {
+        logs.push({ type: 'error', message: 'Error: package main is required' });
+        return logs;
+      }
+
+      if (!code.includes('func main()')) {
+        logs.push({ type: 'error', message: 'Error: main function not found' });
+        return logs;
+      }
+
+      // Check for fmt.Println statements
+      if (code.includes('fmt.Println(')) {
+        const printMatches = code.match(/fmt\.Println\((.*?)\)/g);
+        if (printMatches) {
+          printMatches.forEach(match => {
+            const content = match.replace(/fmt\.Println\(|\)/g, '');
+            let cleanContent = content;
+            if (content.match(/^".*"$/)) {
+              cleanContent = content.replace(/^"|"$/g, '');
+            }
+            logs.push({ type: 'log', message: cleanContent });
+          });
+        }
+      }
+
+      if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'Go code compiled and executed successfully (simulated)' });
+      }
+    } catch (error) {
+      logs.push({ type: 'error', message: `Go CompileError: ${error.message}` });
+    }
+
+    return logs;
+  };
+
+  const executeRust = (code) => {
+    const logs = [];
+    
+    try {
+      if (!code.includes('fn main()')) {
+        logs.push({ type: 'error', message: 'Error: main function not found' });
+        return logs;
+      }
+
+      // Check for println! macro
+      if (code.includes('println!(')) {
+        const printMatches = code.match(/println!\((.*?)\);?/g);
+        if (printMatches) {
+          printMatches.forEach(match => {
+            const content = match.replace(/println!\(|\);?/g, '');
+            let cleanContent = content;
+            if (content.match(/^".*"$/)) {
+              cleanContent = content.replace(/^"|"$/g, '');
+            }
+            logs.push({ type: 'log', message: cleanContent });
+          });
+        }
+      }
+
+      if (logs.length === 0) {
+        logs.push({ type: 'info', message: 'Rust code compiled and executed successfully (simulated)' });
+      }
+    } catch (error) {
+      logs.push({ type: 'error', message: `Rust CompileError: ${error.message}` });
     }
 
     return logs;
   };
 
   const executeCode = (code, language) => {
+    if (!code.trim()) {
+      return [{ type: 'error', message: 'Error: No code provided' }];
+    }
+
     switch (language) {
       case 'javascript':
       case 'typescript':
         return executeJavaScript(code);
       case 'python':
         return executePython(code);
+      case 'java':
+        return executeJava(code);
+      case 'cpp':
+        return executeCpp(code);
+      case 'c':
+        return executeC(code);
+      case 'go':
+        return executeGo(code);
+      case 'rust':
+        return executeRust(code);
       default:
-        return [{ type: 'info', message: `${language} execution simulated - code would run on server` }];
+        return [{ type: 'error', message: `Error: ${language} execution not supported` }];
     }
   };
 
@@ -254,9 +510,9 @@ console.log(twoSum([2, 7, 11, 15], 9));`
     const hasErrors = logs.some(log => log.type === 'error');
     
     if (!hasErrors) {
-      output += `\n✅ Execution completed!\n`;
+      output += `\n✅ Execution completed successfully!\n`;
     } else {
-      output += `\n❌ Execution failed!\n`;
+      output += `\n❌ Execution failed with errors!\n`;
     }
     
     output += `Execution time: ${executionTime}ms\n`;
