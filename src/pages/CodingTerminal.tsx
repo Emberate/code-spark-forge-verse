@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  Calendar
+  Calendar,
+  XCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'react-router-dom';
@@ -50,6 +51,7 @@ const CodingTerminal = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isGeneratingProblem, setIsGeneratingProblem] = useState(false);
   const [generatedProblem, setGeneratedProblem] = useState(null);
+  const [testResults, setTestResults] = useState([]);
   const { toast } = useToast();
   const outputRef = useRef(null);
 
@@ -71,6 +73,130 @@ const CodingTerminal = () => {
 
   const defaultCode = {
     javascript: `// JavaScript Solution
+function twoSum(nums, target) {
+    // Write your solution here
+    return [];
+}
+
+// Test with example cases
+console.log(twoSum([2,7,11,15], 9)); // Expected: [0,1]
+console.log(twoSum([3,2,4], 6));     // Expected: [1,2]
+console.log(twoSum([3,3], 6));       // Expected: [0,1]`,
+    python: `# Python Solution
+def twoSum(nums, target):
+    # Write your solution here
+    return []
+
+# Test with example cases
+print(twoSum([2,7,11,15], 9))  # Expected: [0,1]
+print(twoSum([3,2,4], 6))      # Expected: [1,2]
+print(twoSum([3,3], 6))        # Expected: [0,1]`,
+    java: `// Java Solution
+import java.util.*;
+
+public class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // Write your solution here
+        return new int[]{};
+    }
+    
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println(Arrays.toString(sol.twoSum(new int[]{2,7,11,15}, 9))); // Expected: [0,1]
+        System.out.println(Arrays.toString(sol.twoSum(new int[]{3,2,4}, 6)));     // Expected: [1,2]
+        System.out.println(Arrays.toString(sol.twoSum(new int[]{3,3}, 6)));       // Expected: [0,1]
+    }
+}`,
+    cpp: `// C++ Solution
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+vector<int> twoSum(vector<int>& nums, int target) {
+    // Write your solution here
+    return {};
+}
+
+int main() {
+    vector<int> nums1 = {2,7,11,15};
+    vector<int> result1 = twoSum(nums1, 9);
+    cout << "[" << result1[0] << "," << result1[1] << "]" << endl; // Expected: [0,1]
+    
+    vector<int> nums2 = {3,2,4};
+    vector<int> result2 = twoSum(nums2, 6);
+    cout << "[" << result2[0] << "," << result2[1] << "]" << endl; // Expected: [1,2]
+    
+    return 0;
+}`,
+    c: `// C Solution
+#include <stdio.h>
+#include <stdlib.h>
+
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    // Write your solution here
+    *returnSize = 0;
+    return NULL;
+}
+
+int main() {
+    int nums1[] = {2,7,11,15};
+    int returnSize;
+    int* result = twoSum(nums1, 4, 9, &returnSize);
+    printf("[%d,%d]\\n", result[0], result[1]); // Expected: [0,1]
+    return 0;
+}`,
+    go: `// Go Solution
+package main
+
+import "fmt"
+
+func twoSum(nums []int, target int) []int {
+    // Write your solution here
+    return []int{}
+}
+
+func main() {
+    result1 := twoSum([]int{2,7,11,15}, 9)
+    fmt.Println(result1) // Expected: [0 1]
+    
+    result2 := twoSum([]int{3,2,4}, 6)
+    fmt.Println(result2) // Expected: [1 2]
+}`,
+    rust: `// Rust Solution
+impl Solution {
+    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+        // Write your solution here
+        vec![]
+    }
+}
+
+fn main() {
+    let result1 = Solution::two_sum(vec![2,7,11,15], 9);
+    println!("{:?}", result1); // Expected: [0, 1]
+    
+    let result2 = Solution::two_sum(vec![3,2,4], 6);
+    println!("{:?}", result2); // Expected: [1, 2]
+}`,
+    typescript: `// TypeScript Solution
+function twoSum(nums: number[], target: number): number[] {
+    // Write your solution here
+    return [];
+}
+
+// Test with example cases
+console.log(twoSum([2,7,11,15], 9)); // Expected: [0,1]
+console.log(twoSum([3,2,4], 6));     // Expected: [1,2]
+console.log(twoSum([3,3], 6));       // Expected: [0,1]`
+  };
+
+  useEffect(() => {
+    if (currentProblem && currentProblem.title === 'Two Sum') {
+      setCode(defaultCode[selectedLanguage] || '');
+    } else {
+      // Set generic template for other problems
+      const genericCode = {
+        javascript: `// JavaScript Solution
 function solve() {
     // Write your solution here
     return [];
@@ -78,14 +204,14 @@ function solve() {
 
 // Test your solution
 console.log(solve());`,
-    python: `# Python Solution
+        python: `# Python Solution
 def solve():
     # Write your solution here
     return []
 
 # Test your solution
 print(solve())`,
-    java: `// Java Solution
+        java: `// Java Solution
 public class Solution {
     public int[] solve() {
         // Write your solution here
@@ -98,7 +224,7 @@ public class Solution {
         System.out.println(Arrays.toString(result));
     }
 }`,
-    cpp: `// C++ Solution
+        cpp: `// C++ Solution
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -113,7 +239,7 @@ int main() {
     // Print result
     return 0;
 }`,
-    c: `// C Solution
+        c: `// C Solution
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -128,7 +254,7 @@ int main() {
     int* result = solve(&returnSize);
     return 0;
 }`,
-    go: `// Go Solution
+        go: `// Go Solution
 package main
 
 import "fmt"
@@ -142,7 +268,7 @@ func main() {
     result := solve()
     fmt.Println(result)
 }`,
-    rust: `// Rust Solution
+        rust: `// Rust Solution
 impl Solution {
     pub fn solve() -> Vec<i32> {
         // Write your solution here
@@ -154,7 +280,7 @@ fn main() {
     let result = Solution::solve();
     println!("{:?}", result);
 }`,
-    typescript: `// TypeScript Solution
+        typescript: `// TypeScript Solution
 function solve(): number[] {
     // Write your solution here
     return [];
@@ -162,11 +288,54 @@ function solve(): number[] {
 
 // Test your solution
 console.log(solve());`
-  };
+      };
+      setCode(genericCode[selectedLanguage] || '');
+    }
+  }, [selectedLanguage, currentProblem]);
 
-  useEffect(() => {
-    setCode(defaultCode[selectedLanguage] || '');
-  }, [selectedLanguage]);
+  const runTestCases = (userFunction, testCases) => {
+    const results = [];
+    
+    for (const testCase of testCases) {
+      try {
+        let result;
+        
+        // Execute the function based on the problem
+        if (currentProblem?.title === 'Two Sum') {
+          result = userFunction(testCase.input.nums, testCase.input.target);
+        } else if (currentProblem?.title === 'Valid Parentheses') {
+          result = userFunction(testCase.input.s);
+        } else if (currentProblem?.title === 'Maximum Subarray') {
+          result = userFunction(testCase.input.nums);
+        } else if (currentProblem?.title === 'Climbing Stairs') {
+          result = userFunction(testCase.input.n);
+        } else {
+          result = userFunction();
+        }
+        
+        // Compare result with expected output
+        const passed = JSON.stringify(result) === JSON.stringify(testCase.expected);
+        
+        results.push({
+          input: testCase.input,
+          expected: testCase.expected,
+          actual: result,
+          passed,
+          description: testCase.description
+        });
+      } catch (error) {
+        results.push({
+          input: testCase.input,
+          expected: testCase.expected,
+          actual: `Error: ${error.message}`,
+          passed: false,
+          description: testCase.description
+        });
+      }
+    }
+    
+    return results;
+  };
 
   const executeJavaScript = (code) => {
     const logs = [];
@@ -192,13 +361,46 @@ console.log(solve());`
       logs.push({ type: 'info', message: args.map(arg => String(arg)).join(' ') });
     };
 
+    let userFunction = null;
+    
     try {
-      const func = new Function(code);
-      const result = func();
+      const func = new Function(code + '\n\n' + 
+        (currentProblem?.title === 'Two Sum' ? 'return twoSum;' :
+         currentProblem?.title === 'Valid Parentheses' ? 'return isValid;' :
+         currentProblem?.title === 'Maximum Subarray' ? 'return maxSubArray;' :
+         currentProblem?.title === 'Climbing Stairs' ? 'return climbStairs;' :
+         'return solve;')
+      );
+      userFunction = func();
       
-      if (result !== undefined) {
-        logs.push({ type: 'return', message: typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result) });
+      // Run test cases if available
+      if (currentProblem?.testCases && userFunction) {
+        const testResults = runTestCases(userFunction, currentProblem.testCases);
+        setTestResults(testResults);
+        
+        const passedTests = testResults.filter(test => test.passed).length;
+        const totalTests = testResults.length;
+        
+        logs.push({ 
+          type: 'info', 
+          message: `Test Results: ${passedTests}/${totalTests} tests passed` 
+        });
+        
+        testResults.forEach((test, index) => {
+          if (test.passed) {
+            logs.push({ 
+              type: 'log', 
+              message: `✅ Test ${index + 1}: ${test.description} - PASSED` 
+            });
+          } else {
+            logs.push({ 
+              type: 'error', 
+              message: `❌ Test ${index + 1}: ${test.description} - FAILED\n   Expected: ${JSON.stringify(test.expected)}\n   Got: ${JSON.stringify(test.actual)}` 
+            });
+          }
+        });
       }
+      
     } catch (error) {
       logs.push({ type: 'error', message: `SyntaxError: ${error.message}` });
     } finally {
@@ -557,6 +759,7 @@ console.log(solve());`
 
     setIsRunning(true);
     setOutput('Starting execution...\n');
+    setTestResults([]);
     
     try {
       // Small delay to show the running state
@@ -568,18 +771,20 @@ console.log(solve());`
       setOutput(formattedOutput);
       
       const hasErrors = logs.some(log => log.type === 'error');
+      const passedAllTests = testResults.length > 0 ? testResults.every(test => test.passed) : false;
       
       // Update problem progress
       if (currentProblem && !hasErrors) {
         await updateProblemStatus(currentProblem.id, { 
           attempted: true,
-          solved: !hasErrors // Mark as solved if no errors
+          solved: passedAllTests // Mark as solved only if all tests pass
         });
       }
       
       toast({
-        title: hasErrors ? "Execution Error" : "Code Executed!",
-        description: hasErrors ? "Check the output for error details." : "Your code ran successfully.",
+        title: hasErrors ? "Execution Error" : (passedAllTests ? "All Tests Passed!" : "Code Executed"),
+        description: hasErrors ? "Check the output for error details." : 
+                    (passedAllTests ? "Your solution passed all test cases!" : "Your code ran successfully."),
         variant: hasErrors ? "destructive" : "default",
       });
     } catch (error) {
@@ -787,6 +992,29 @@ console.log(solve());`
                     <div className="prose prose-sm max-w-none">
                       <p className="whitespace-pre-wrap">{currentProblem.description}</p>
                     </div>
+                    
+                    {/* Test Results Display */}
+                    {testResults.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="font-semibold">Test Results:</h4>
+                        {testResults.map((result, index) => (
+                          <div key={index} className={`p-2 rounded-md border ${result.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                            <div className="flex items-center gap-2">
+                              {result.passed ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
+                              <span className="text-sm font-medium">Test {index + 1}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{result.description}</p>
+                            {!result.passed && (
+                              <div className="text-xs mt-1">
+                                <div>Expected: {JSON.stringify(result.expected)}</div>
+                                <div>Got: {JSON.stringify(result.actual)}</div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     {currentProblem.solution && (
                       <div className="mt-4">
                         <Button

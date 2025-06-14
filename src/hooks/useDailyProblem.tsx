@@ -12,6 +12,11 @@ interface DailyProblem {
   acceptance: string;
   frequency: 'Low' | 'Medium' | 'High';
   companies: string[];
+  testCases?: Array<{
+    input: any;
+    expected: any;
+    description?: string;
+  }>;
 }
 
 export const useDailyProblem = () => {
@@ -55,7 +60,24 @@ export const useDailyProblem = () => {
           tags: ['Array', 'Hash Table'],
           acceptance: '50.1%',
           frequency: 'High',
-          companies: ['Amazon', 'Google', 'Microsoft']
+          companies: ['Amazon', 'Google', 'Microsoft'],
+          testCases: [
+            {
+              input: { nums: [2, 7, 11, 15], target: 9 },
+              expected: [0, 1],
+              description: 'Basic case: nums = [2,7,11,15], target = 9'
+            },
+            {
+              input: { nums: [3, 2, 4], target: 6 },
+              expected: [1, 2],
+              description: 'Different indices: nums = [3,2,4], target = 6'
+            },
+            {
+              input: { nums: [3, 3], target: 6 },
+              expected: [0, 1],
+              description: 'Same numbers: nums = [3,3], target = 6'
+            }
+          ]
         },
         {
           id: 'daily-2',
@@ -65,7 +87,24 @@ export const useDailyProblem = () => {
           tags: ['String', 'Stack'],
           acceptance: '40.8%',
           frequency: 'High',
-          companies: ['Amazon', 'Microsoft', 'Google']
+          companies: ['Amazon', 'Microsoft', 'Google'],
+          testCases: [
+            {
+              input: { s: "()" },
+              expected: true,
+              description: 'Simple parentheses: s = "()"'
+            },
+            {
+              input: { s: "()[]{}" },
+              expected: true,
+              description: 'Mixed brackets: s = "()[]{}"'
+            },
+            {
+              input: { s: "(]" },
+              expected: false,
+              description: 'Invalid order: s = "(]"'
+            }
+          ]
         },
         {
           id: 'daily-3',
@@ -75,7 +114,24 @@ export const useDailyProblem = () => {
           tags: ['Linked List', 'Recursion'],
           acceptance: '72.1%',
           frequency: 'High',
-          companies: ['Amazon', 'Microsoft', 'Apple']
+          companies: ['Amazon', 'Microsoft', 'Apple'],
+          testCases: [
+            {
+              input: { head: [1, 2, 3, 4, 5] },
+              expected: [5, 4, 3, 2, 1],
+              description: 'Basic reversal: [1,2,3,4,5] -> [5,4,3,2,1]'
+            },
+            {
+              input: { head: [1, 2] },
+              expected: [2, 1],
+              description: 'Two nodes: [1,2] -> [2,1]'
+            },
+            {
+              input: { head: [] },
+              expected: [],
+              description: 'Empty list: [] -> []'
+            }
+          ]
         },
         {
           id: 'daily-4',
@@ -85,7 +141,24 @@ export const useDailyProblem = () => {
           tags: ['Array', 'Dynamic Programming'],
           acceptance: '49.9%',
           frequency: 'High',
-          companies: ['Amazon', 'Microsoft', 'LinkedIn']
+          companies: ['Amazon', 'Microsoft', 'LinkedIn'],
+          testCases: [
+            {
+              input: { nums: [-2, 1, -3, 4, -1, 2, 1, -5, 4] },
+              expected: 6,
+              description: 'Basic case: [-2,1,-3,4,-1,2,1,-5,4] -> 6'
+            },
+            {
+              input: { nums: [1] },
+              expected: 1,
+              description: 'Single element: [1] -> 1'
+            },
+            {
+              input: { nums: [5, 4, -1, 7, 8] },
+              expected: 23,
+              description: 'All positive subarray: [5,4,-1,7,8] -> 23'
+            }
+          ]
         },
         {
           id: 'daily-5',
@@ -95,7 +168,24 @@ export const useDailyProblem = () => {
           tags: ['Math', 'Dynamic Programming'],
           acceptance: '51.5%',
           frequency: 'High',
-          companies: ['Amazon', 'Adobe', 'Apple']
+          companies: ['Amazon', 'Adobe', 'Apple'],
+          testCases: [
+            {
+              input: { n: 2 },
+              expected: 2,
+              description: 'Two steps: n = 2 -> 2 ways'
+            },
+            {
+              input: { n: 3 },
+              expected: 3,
+              description: 'Three steps: n = 3 -> 3 ways'
+            },
+            {
+              input: { n: 1 },
+              expected: 1,
+              description: 'One step: n = 1 -> 1 way'
+            }
+          ]
         }
       ];
 
