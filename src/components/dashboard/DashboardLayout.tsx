@@ -8,8 +8,7 @@ import {
   BookOpen, 
   Terminal, 
   Trophy, 
-  LogOut,
-  Settings
+  LogOut
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -31,7 +30,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: BookOpen, label: 'Problems', path: '/problems' },
     { icon: Terminal, label: 'Terminal', path: '/terminal' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
-    { icon: Settings, label: 'Admin', path: '/admin' },
   ];
 
   return (
