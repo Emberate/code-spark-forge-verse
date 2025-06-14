@@ -364,6 +364,10 @@ console.log(solve());`
     let userFunction = null;
     
     try {
+      // First, check for basic syntax errors
+      const syntaxCheckFunc = new Function(code);
+      
+      // Then try to extract the function
       const func = new Function(code + '\n\n' + 
         (currentProblem?.title === 'Two Sum' ? 'return twoSum;' :
          currentProblem?.title === 'Valid Parentheses' ? 'return isValid;' :
@@ -372,6 +376,11 @@ console.log(solve());`
          'return solve;')
       );
       userFunction = func();
+      
+      if (typeof userFunction !== 'function') {
+        logs.push({ type: 'error', message: `Function not found. Make sure you define the correct function name.` });
+        return logs;
+      }
       
       // Run test cases if available
       if (currentProblem?.testCases && userFunction) {
@@ -402,7 +411,14 @@ console.log(solve());`
       }
       
     } catch (error) {
-      logs.push({ type: 'error', message: `SyntaxError: ${error.message}` });
+      // Check for common syntax errors
+      if (error.message.includes('Unexpected token')) {
+        logs.push({ type: 'error', message: `SyntaxError: ${error.message}. Check for typos like 'map.st' instead of 'map.set'` });
+      } else if (error.message.includes('is not defined')) {
+        logs.push({ type: 'error', message: `ReferenceError: ${error.message}. Check variable names and function calls.` });
+      } else {
+        logs.push({ type: 'error', message: `Error: ${error.message}` });
+      }
     } finally {
       Object.assign(console, originalConsole);
     }
