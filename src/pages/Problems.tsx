@@ -6,12 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, CheckCircle, Clock, Star } from 'lucide-react';
+import { Search, Filter, CheckCircle, Clock, Star, Calendar, Code, Trophy, Target } from 'lucide-react';
+import { useDailyProblem } from '@/hooks/useDailyProblem';
+import { useProblemProgress } from '@/hooks/useProblemProgress';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const Problems = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [selectedTag, setSelectedTag] = useState('all');
+  
+  const { data: dailyProblem, isLoading: dailyLoading } = useDailyProblem();
+  const { getProblemStatus, updateProblemStatus } = useProblemProgress();
 
   const problems = [
     {
@@ -93,6 +102,38 @@ const Problems = () => {
     }
   };
 
+  const handleSolveProblem = (problem: any) => {
+    // Navigate to terminal with problem data
+    const searchParams = new URLSearchParams({
+      problemId: problem.id.toString(),
+      problemTitle: problem.title,
+      difficulty: problem.difficulty
+    });
+    navigate(`/terminal?${searchParams.toString()}`);
+  };
+
+  const handleSolveDailyProblem = () => {
+    if (!dailyProblem) return;
+    
+    // Navigate to terminal with daily problem data
+    const searchParams = new URLSearchParams({
+      problemId: dailyProblem.id,
+      problemTitle: dailyProblem.title,
+      difficulty: dailyProblem.difficulty,
+      isDaily: 'true'
+    });
+    navigate(`/terminal?${searchParams.toString()}`);
+  };
+
+  const filteredProblems = problems.filter(problem => {
+    const matchesSearch = problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         problem.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesDifficulty = selectedDifficulty === 'all' || problem.difficulty === selectedDifficulty;
+    const matchesTag = selectedTag === 'all' || problem.tags.includes(selectedTag);
+    
+    return matchesSearch && matchesDifficulty && matchesTag;
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -101,6 +142,119 @@ const Problems = () => {
           <p className="text-muted-foreground mt-2">
             Practice coding problems from top tech companies
           </p>
+        </div>
+
+        {/* Daily Challenge */}
+        <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-orange-600" />
+              Daily Challenge
+              <Badge variant="secondary" className="ml-auto">
+                {new Date().toLocaleDateString()}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dailyLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Loading today's challenge...</p>
+              </div>
+            ) : dailyProblem ? (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-2">{dailyProblem.title}</h3>
+                    <div className="flex items-center gap-4 mb-3">
+                      <Badge className={getDifficultyColor(dailyProblem.difficulty)}>
+                        {dailyProblem.difficulty}
+                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Target className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{dailyProblem.acceptance} acceptance</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span className="text-sm text-muted-foreground">{dailyProblem.frequency} frequency</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {dailyProblem.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {dailyProblem.description.split('\n')[0]}
+                    </p>
+                  </div>
+                  <div className="ml-4">
+                    <Button 
+                      onClick={handleSolveDailyProblem}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      <Code className="h-4 w-4 mr-2" />
+                      Solve Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">
+                No daily challenge available
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Problem Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Solved</p>
+                  <p className="text-xl font-bold">2</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Attempted</p>
+                  <p className="text-xl font-bold">1</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Easy</p>
+                  <p className="text-xl font-bold">2/2</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Acceptance</p>
+                  <p className="text-xl font-bold">67%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
@@ -155,7 +309,7 @@ const Problems = () => {
                   <div className="col-span-1">Action</div>
                 </div>
                 
-                {problems.map((problem) => (
+                {filteredProblems.map((problem) => (
                   <div key={problem.id} className="grid grid-cols-12 gap-4 p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                     <div className="col-span-1 flex items-center">
                       {getStatusIcon(problem.status)}
@@ -192,7 +346,11 @@ const Problems = () => {
                       </div>
                     </div>
                     <div className="col-span-1 flex items-center">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSolveProblem(problem)}
+                      >
                         Solve
                       </Button>
                     </div>
@@ -227,7 +385,7 @@ const Problems = () => {
                       {problems
                         .filter(p => p.companies.includes(company))
                         .map((problem) => (
-                          <Card key={problem.id}>
+                          <Card key={problem.id} className="hover:shadow-md transition-shadow">
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between mb-2">
                                 <h4 className="font-medium text-sm">{problem.title}</h4>
@@ -237,7 +395,12 @@ const Problems = () => {
                                 <Badge className={getDifficultyColor(problem.difficulty)}>
                                   {problem.difficulty}
                                 </Badge>
-                                <Button size="sm">Practice</Button>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => handleSolveProblem(problem)}
+                                >
+                                  Practice
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>

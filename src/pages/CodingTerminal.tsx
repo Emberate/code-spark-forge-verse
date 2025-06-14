@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,18 +17,30 @@ import {
   Eye,
   EyeOff,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'react-router-dom';
-import { useProblems } from '@/hooks/useProblems';
+import { useProblems, useProblem } from '@/hooks/useProblems';
+import { useDailyProblem } from '@/hooks/useDailyProblem';
+import { useProblemProgress } from '@/hooks/useProblemProgress';
 
 const CodingTerminal = () => {
   const [searchParams] = useSearchParams();
   const pathId = searchParams.get('pathId');
   const pathTitle = searchParams.get('pathTitle');
+  const problemId = searchParams.get('problemId');
+  const problemTitle = searchParams.get('problemTitle');
+  const difficulty = searchParams.get('difficulty');
+  const isDaily = searchParams.get('isDaily') === 'true';
   
   const { data: problems, isLoading: problemsLoading } = useProblems(pathId || undefined);
+  const { data: specificProblem } = useProblem(problemId || undefined);
+  const { data: dailyProblem } = useDailyProblem();
+  const { getProblemStatus, updateProblemStatus } = useProblemProgress();
+  
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
   
@@ -42,7 +53,10 @@ const CodingTerminal = () => {
   const { toast } = useToast();
   const outputRef = useRef(null);
 
-  const currentProblem = problems && problems.length > 0 ? problems[currentProblemIndex] : generatedProblem;
+  // Determine current problem based on context
+  const currentProblem = isDaily ? dailyProblem :
+                        specificProblem || 
+                        (problems && problems.length > 0 ? problems[currentProblemIndex] : generatedProblem);
 
   const languages = [
     { id: 'javascript', name: 'JavaScript', extension: 'js' },
@@ -154,20 +168,6 @@ console.log(solve());`
     setCode(defaultCode[selectedLanguage] || '');
   }, [selectedLanguage]);
 
-  const goToPrevProblem = () => {
-    if (currentProblemIndex > 0) {
-      setCurrentProblemIndex(currentProblemIndex - 1);
-      setShowSolution(false);
-    }
-  };
-
-  const goToNextProblem = () => {
-    if (problems && currentProblemIndex < problems.length - 1) {
-      setCurrentProblemIndex(currentProblemIndex + 1);
-      setShowSolution(false);
-    }
-  };
-
   const executeJavaScript = (code) => {
     const logs = [];
     const originalConsole = {
@@ -177,7 +177,6 @@ console.log(solve());`
       info: console.info
     };
 
-    // Override console methods to capture output
     console.log = (...args) => {
       logs.push({ type: 'log', message: args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
@@ -194,18 +193,15 @@ console.log(solve());`
     };
 
     try {
-      // Create a safe execution environment
       const func = new Function(code);
       const result = func();
       
-      // If there's a return value, add it to logs
       if (result !== undefined) {
         logs.push({ type: 'return', message: typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result) });
       }
     } catch (error) {
       logs.push({ type: 'error', message: `SyntaxError: ${error.message}` });
     } finally {
-      // Restore original console methods
       Object.assign(console, originalConsole);
     }
 
@@ -549,6 +545,69 @@ console.log(solve());`
     return output;
   };
 
+  const runCode = async () => {
+    if (!code.trim()) {
+      toast({
+        title: "No Code",
+        description: "Please enter some code to execute.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRunning(true);
+    setOutput('Starting execution...\n');
+    
+    try {
+      // Small delay to show the running state
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const logs = executeCode(code, selectedLanguage);
+      const formattedOutput = formatOutput(logs, selectedLanguage);
+      
+      setOutput(formattedOutput);
+      
+      const hasErrors = logs.some(log => log.type === 'error');
+      
+      // Update problem progress
+      if (currentProblem && !hasErrors) {
+        await updateProblemStatus(currentProblem.id, { 
+          attempted: true,
+          solved: !hasErrors // Mark as solved if no errors
+        });
+      }
+      
+      toast({
+        title: hasErrors ? "Execution Error" : "Code Executed!",
+        description: hasErrors ? "Check the output for error details." : "Your code ran successfully.",
+        variant: hasErrors ? "destructive" : "default",
+      });
+    } catch (error) {
+      setOutput(`❌ Execution Error: ${error.message}\n\nPlease check your code and try again.`);
+      toast({
+        title: "Execution Failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const goToPrevProblem = () => {
+    if (currentProblemIndex > 0) {
+      setCurrentProblemIndex(currentProblemIndex - 1);
+      setShowSolution(false);
+    }
+  };
+
+  const goToNextProblem = () => {
+    if (problems && currentProblemIndex < problems.length - 1) {
+      setCurrentProblemIndex(currentProblemIndex + 1);
+      setShowSolution(false);
+    }
+  };
+
   const generateProblemWithGemini = async () => {
     setIsGeneratingProblem(true);
     try {
@@ -596,6 +655,7 @@ console.log(solve());`
       if (data.candidates && data.candidates[0]) {
         const problemText = data.candidates[0].content.parts[0].text;
         setGeneratedProblem({
+          id: `generated-${Date.now()}`,
           title: "AI Generated Problem",
           difficulty: "Medium",
           description: problemText,
@@ -615,46 +675,6 @@ console.log(solve());`
       });
     } finally {
       setIsGeneratingProblem(false);
-    }
-  };
-
-  const runCode = async () => {
-    if (!code.trim()) {
-      toast({
-        title: "No Code",
-        description: "Please enter some code to execute.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsRunning(true);
-    setOutput('Starting execution...\n');
-    
-    try {
-      // Small delay to show the running state
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const logs = executeCode(code, selectedLanguage);
-      const formattedOutput = formatOutput(logs, selectedLanguage);
-      
-      setOutput(formattedOutput);
-      
-      const hasErrors = logs.some(log => log.type === 'error');
-      toast({
-        title: hasErrors ? "Execution Error" : "Code Executed!",
-        description: hasErrors ? "Check the output for error details." : "Your code ran successfully.",
-        variant: hasErrors ? "destructive" : "default",
-      });
-    } catch (error) {
-      setOutput(`❌ Execution Error: ${error.message}\n\nPlease check your code and try again.`);
-      toast({
-        title: "Execution Failed",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRunning(false);
     }
   };
 
@@ -689,10 +709,15 @@ console.log(solve());`
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <TerminalIcon className="h-8 w-8" />
               Coding Terminal
+              {isDaily && <Badge variant="secondary" className="ml-2"><Calendar className="h-3 w-3 mr-1" />Daily Challenge</Badge>}
               {pathTitle && <span className="text-lg text-muted-foreground">- {pathTitle}</span>}
+              {problemTitle && !pathTitle && <span className="text-lg text-muted-foreground">- {problemTitle}</span>}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {pathTitle ? 'Solve problems from your learning path' : 'Practice coding in multiple programming languages'}
+              {isDaily ? 'Solve today\'s daily challenge' :
+               pathTitle ? 'Solve problems from your learning path' : 
+               problemTitle ? `Solve: ${problemTitle}` :
+               'Practice coding in multiple programming languages'}
             </p>
           </div>
           <Button 
@@ -711,10 +736,10 @@ console.log(solve());`
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  Problem Statement
+                  {isDaily ? <Calendar className="h-5 w-5 text-orange-600" /> : <Sparkles className="h-5 w-5 text-purple-600" />}
+                  {isDaily ? 'Daily Challenge' : 'Problem Statement'}
                 </CardTitle>
-                {problems && problems.length > 0 && (
+                {problems && problems.length > 0 && !specificProblem && !isDaily && (
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -747,12 +772,17 @@ console.log(solve());`
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold">{currentProblem.title}</h3>
-                      <Badge variant={
-                        currentProblem.difficulty === 'Easy' ? 'default' :
-                        currentProblem.difficulty === 'Medium' ? 'secondary' : 'destructive'
-                      }>
-                        {currentProblem.difficulty}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={
+                          currentProblem.difficulty === 'Easy' ? 'default' :
+                          currentProblem.difficulty === 'Medium' ? 'secondary' : 'destructive'
+                        }>
+                          {currentProblem.difficulty}
+                        </Badge>
+                        {currentProblem.id && getProblemStatus(currentProblem.id).solved && (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        )}
+                      </div>
                     </div>
                     <div className="prose prose-sm max-w-none">
                       <p className="whitespace-pre-wrap">{currentProblem.description}</p>
