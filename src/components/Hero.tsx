@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, Star, Users, Trophy, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   return (
@@ -28,10 +29,12 @@ export const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="px-8 py-4 text-lg">
-              <Play className="h-5 w-5 mr-2" />
-              Start Learning Free
-            </Button>
+            <Link to="/signup">
+              <Button size="lg" className="px-8 py-4 text-lg">
+                <Play className="h-5 w-5 mr-2" />
+                Start Learning Free
+              </Button>
+            </Link>
             <Button variant="outline" size="lg" className="px-8 py-4 text-lg">
               Watch Demo
             </Button>
