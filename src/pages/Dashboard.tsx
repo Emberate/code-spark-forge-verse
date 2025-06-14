@@ -6,6 +6,11 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { LearningPath } from '@/components/dashboard/LearningPath';
 import { AchievementBadges } from '@/components/dashboard/AchievementBadges';
 import { TrendingProblems } from '@/components/dashboard/TrendingProblems';
+import { MockInterview } from '@/components/dashboard/MockInterview';
+import { LanguageSelector } from '@/components/dashboard/LanguageSelector';
+import { PortfolioBuilder } from '@/components/dashboard/PortfolioBuilder';
+import { PlacementPrep } from '@/components/dashboard/PlacementPrep';
+import { PrioritySupport } from '@/components/dashboard/PrioritySupport';
 import { Code, Trophy, Target, Zap, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useInitializeUserProgress } from '@/hooks/useUserProgress';
@@ -34,7 +39,7 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Problems Solved',
-      value: '0', // This will be calculated from user activities
+      value: '0',
       change: 'Just getting started!',
       icon: Code,
       color: 'text-blue-600',
@@ -78,19 +83,29 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <StatsCard key={index} {...stat} />
           ))}
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Primary Features */}
           <div className="lg:col-span-2 space-y-8">
             <LearningPath />
+            <MockInterview />
             <TrendingProblems />
+            <PlacementPrep />
           </div>
+          
+          {/* Right Column - Secondary Features */}
           <div className="space-y-8">
             <AchievementBadges />
+            <PortfolioBuilder />
+            <LanguageSelector />
+            <PrioritySupport />
             <RecentActivity />
           </div>
         </div>
