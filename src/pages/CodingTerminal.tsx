@@ -37,10 +37,11 @@ const CodingTerminal = () => {
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [isGeneratingProblem, setIsGeneratingProblem] = useState(false);
+  const [generatedProblem, setGeneratedProblem] = useState(null);
   const { toast } = useToast();
   const outputRef = useRef(null);
 
-  const currentProblem = problems && problems.length > 0 ? problems[currentProblemIndex] : null;
+  const currentProblem = problems && problems.length > 0 ? problems[currentProblemIndex] : generatedProblem;
 
   const languages = [
     { id: 'javascript', name: 'JavaScript', extension: 'js' },
@@ -593,7 +594,12 @@ console.log(solve());`
       const data = await response.json();
       if (data.candidates && data.candidates[0]) {
         const problemText = data.candidates[0].content.parts[0].text;
-        setCurrentProblem(problemText);
+        setGeneratedProblem({
+          title: "AI Generated Problem",
+          difficulty: "Medium",
+          description: problemText,
+          solution: null
+        });
         toast({
           title: "New Problem Generated!",
           description: "A fresh coding challenge is ready for you.",
