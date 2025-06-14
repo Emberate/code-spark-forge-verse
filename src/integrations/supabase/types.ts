@@ -9,7 +9,189 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      learning_paths: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          difficulty: string
+          id: string
+          order_index: number
+          prerequisites: string[] | null
+          title: string
+          total_problems: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          difficulty: string
+          id?: string
+          order_index: number
+          prerequisites?: string[] | null
+          title: string
+          total_problems?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string
+          id?: string
+          order_index?: number
+          prerequisites?: string[] | null
+          title?: string
+          total_problems?: number
+        }
+        Relationships: []
+      }
+      problems: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          difficulty: string
+          id: string
+          learning_path_id: string
+          solution: string | null
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          difficulty: string
+          id?: string
+          learning_path_id: string
+          solution?: string | null
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string
+          id?: string
+          learning_path_id?: string
+          solution?: string | null
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problems_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          current_streak: number | null
+          email: string | null
+          full_name: string | null
+          id: string
+          level: number | null
+          points: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_streak?: number | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          level?: number | null
+          points?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_streak?: number | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          level?: number | null
+          points?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          id: string
+          problem_id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          id?: string
+          problem_id: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          id?: string
+          problem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activities_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_progress: {
+        Row: {
+          completed_at: string | null
+          completed_problems: number | null
+          created_at: string | null
+          id: string
+          learning_path_id: string
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_problems?: number | null
+          created_at?: string | null
+          id?: string
+          learning_path_id: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_problems?: number | null
+          created_at?: string | null
+          id?: string
+          learning_path_id?: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_learning_path_id_fkey"
+            columns: ["learning_path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

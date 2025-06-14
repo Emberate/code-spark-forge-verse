@@ -4,42 +4,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Circle, Lock } from 'lucide-react';
+import { useUserProgress } from '@/hooks/useUserProgress';
 
 export const LearningPath = () => {
-  const paths = [
-    {
-      id: 1,
-      title: 'Arrays & Strings',
-      completed: 15,
-      total: 20,
-      status: 'in-progress',
-      difficulty: 'Easy'
-    },
-    {
-      id: 2,
-      title: 'Linked Lists',
-      completed: 8,
-      total: 12,
-      status: 'in-progress',
-      difficulty: 'Medium'
-    },
-    {
-      id: 3,
-      title: 'Trees & Graphs',
-      completed: 0,
-      total: 15,
-      status: 'locked',
-      difficulty: 'Hard'
-    },
-    {
-      id: 4,
-      title: 'Dynamic Programming',
-      completed: 0,
-      total: 18,
-      status: 'locked',
-      difficulty: 'Hard'
-    }
-  ];
+  const { data: progressData, isLoading } = useUserProgress();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Learning Path</CardTitle>
+          <CardDescription>Loading your progress...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!progressData || progressData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Learning Path</CardTitle>
+          <CardDescription>Setting up your learning journey...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p>Your learning path will appear here once initialized.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -51,13 +49,18 @@ export const LearningPath = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {paths.map((path) => {
-            const progress = (path.completed / path.total) * 100;
-            const isLocked = path.status === 'locked';
-            const isCompleted = path.completed === path.total;
+          {progressData.map((progress) => {
+            const path = progress.learning_paths;
+            const progressPercentage = path.total_problems > 0 
+              ? (progress.completed_problems / path.total_problems) * 100 
+              : 0;
+            
+            const isLocked = progress.status === 'locked';
+            const isCompleted = progress.status === 'completed';
+            const isInProgress = progress.status === 'in-progress';
 
             return (
-              <div key={path.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+              <div key={progress.id} className="flex items-center space-x-4 p-4 border rounded-lg">
                 <div className="flex-shrink-0">
                   {isCompleted ? (
                     <CheckCircle className="h-6 w-6 text-green-600" />
@@ -80,10 +83,13 @@ export const LearningPath = () => {
                       {path.difficulty}
                     </span>
                   </div>
+                  <p className={`text-xs mt-1 ${isLocked ? 'text-gray-400' : 'text-muted-foreground'}`}>
+                    {path.description}
+                  </p>
                   <div className="mt-2">
-                    <Progress value={progress} className="h-2" />
+                    <Progress value={progressPercentage} className="h-2" />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {path.completed}/{path.total} problems completed
+                      {progress.completed_problems}/{path.total_problems} problems completed
                     </p>
                   </div>
                 </div>

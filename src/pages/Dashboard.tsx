@@ -1,55 +1,64 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { LearningPath } from '@/components/dashboard/LearningPath';
 import { AchievementBadges } from '@/components/dashboard/AchievementBadges';
 import { TrendingProblems } from '@/components/dashboard/TrendingProblems';
-import { Code, Trophy, Target, Zap, Clock, Star } from 'lucide-react';
+import { Code, Trophy, Target, Zap, Clock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile, useInitializeUserProgress } from '@/hooks/useUserProgress';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { data: profile, isLoading: profileLoading } = useUserProfile();
+  const { data: initialized } = useInitializeUserProgress();
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      window.location.href = '/login';
+    if (!authLoading && !user) {
+      navigate('/login');
     }
-  }, []);
+  }, [user, authLoading, navigate]);
 
-  if (!user) return null;
+  if (authLoading || profileLoading || !user || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   const stats = [
     {
       title: 'Problems Solved',
-      value: '142',
-      change: '+12 this week',
+      value: '0', // This will be calculated from user activities
+      change: 'Just getting started!',
       icon: Code,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       title: 'Current Streak',
-      value: '15 days',
-      change: 'Personal best!',
+      value: `${profile.current_streak} days`,
+      change: profile.current_streak > 0 ? 'Keep it up!' : 'Start your streak!',
       icon: Zap,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100'
     },
     {
-      title: 'Ranking',
-      value: '#2,847',
-      change: '+156 this month',
+      title: 'Level',
+      value: `Level ${profile.level}`,
+      change: `${profile.points} points`,
       icon: Trophy,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       title: 'Study Time',
-      value: '48h',
+      value: '0h',
       change: 'This month',
       icon: Clock,
       color: 'text-purple-600',
@@ -61,7 +70,9 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {user.name}! 👋</h1>
+          <h1 className="text-3xl font-bold">
+            Welcome back, {profile.full_name || 'Student'}! 👋
+          </h1>
           <p className="text-muted-foreground mt-2">
             Ready to continue your coding journey? You're doing great!
           </p>

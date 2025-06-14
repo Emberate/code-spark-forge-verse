@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -17,6 +18,8 @@ import {
   Terminal
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,6 +28,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -36,9 +40,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Successfully logged out');
+    } catch (error) {
+      toast.error('Error logging out');
+    }
   };
 
   return (
