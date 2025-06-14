@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -14,7 +13,8 @@ import {
   X,
   LogOut,
   Search,
-  Bell
+  Bell,
+  Terminal
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -29,6 +29,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Problems', href: '/problems', icon: Target },
+    { name: 'Terminal', href: '/terminal', icon: Terminal },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Interview Prep', href: '/interview', icon: BookOpen },
     { name: 'Study Groups', href: '/groups', icon: Users },
