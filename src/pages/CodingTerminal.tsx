@@ -191,6 +191,93 @@ console.log(twoSum([3,2,4], 6));     // Expected: [1,2]
 console.log(twoSum([3,3], 6));       // Expected: [0,1]`
   }), []);
 
+  const generateProblemWithGemini = useCallback(async () => {
+    setIsGeneratingProblem(true);
+    try {
+      // Simulate AI problem generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const aiProblems = [
+        {
+          id: 'ai-generated-1',
+          title: 'Array Rotation',
+          difficulty: 'Medium',
+          description: 'Given an array and a number k, rotate the array to the right by k steps.\n\nExample:\nInput: nums = [1,2,3,4,5,6,7], k = 3\nOutput: [5,6,7,1,2,3,4]\n\nConstraints:\n- 1 <= nums.length <= 10^5\n- -2^31 <= nums[i] <= 2^31 - 1\n- 0 <= k <= 10^5',
+          testCases: [
+            {
+              input: { nums: [1,2,3,4,5,6,7], k: 3 },
+              expected: [5,6,7,1,2,3,4],
+              description: 'Basic rotation: nums = [1,2,3,4,5,6,7], k = 3'
+            }
+          ]
+        }
+      ];
+      
+      setGeneratedProblem(aiProblems[0]);
+      toast({
+        title: "Problem Generated!",
+        description: "AI has created a new coding problem for you.",
+      });
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate AI problem. Try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingProblem(false);
+    }
+  }, [toast]);
+
+  const goToPrevProblem = useCallback(() => {
+    if (currentProblemIndex > 0) {
+      setCurrentProblemIndex(currentProblemIndex - 1);
+      setTestResults([]);
+      setOutput('');
+    }
+  }, [currentProblemIndex]);
+
+  const goToNextProblem = useCallback(() => {
+    if (problems && currentProblemIndex < problems.length - 1) {
+      setCurrentProblemIndex(currentProblemIndex + 1);
+      setTestResults([]);
+      setOutput('');
+    }
+  }, [currentProblemIndex, problems]);
+
+  const copyCode = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({
+        title: "Code Copied",
+        description: "Code has been copied to clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy code to clipboard.",
+        variant: "destructive",
+      });
+    }
+  }, [code, toast]);
+
+  const saveCode = useCallback(() => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `solution.${languages.find(l => l.id === selectedLanguage)?.extension || 'txt'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Code Saved",
+      description: "Code has been downloaded as a file.",
+    });
+  }, [code, selectedLanguage, languages, toast]);
+
   const runTestCases = useCallback((userFunction, testCases) => {
     const results = [];
     
