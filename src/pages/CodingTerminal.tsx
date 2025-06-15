@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,6 @@ const CodingTerminal = () => {
   
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
-  
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
@@ -55,12 +54,14 @@ const CodingTerminal = () => {
   const { toast } = useToast();
   const outputRef = useRef(null);
 
-  // Determine current problem based on context
-  const currentProblem = isDaily ? dailyProblem :
-                        specificProblem || 
-                        (problems && problems.length > 0 ? problems[currentProblemIndex] : generatedProblem);
+  const currentProblem = useMemo(() => {
+    if (isDaily) return dailyProblem;
+    if (specificProblem) return specificProblem;
+    if (problems && problems.length > 0) return problems[currentProblemIndex];
+    return generatedProblem;
+  }, [isDaily, dailyProblem, specificProblem, problems, currentProblemIndex, generatedProblem]);
 
-  const languages = [
+  const languages = useMemo(() => [
     { id: 'javascript', name: 'JavaScript', extension: 'js' },
     { id: 'python', name: 'Python', extension: 'py' },
     { id: 'java', name: 'Java', extension: 'java' },
@@ -69,9 +70,9 @@ const CodingTerminal = () => {
     { id: 'go', name: 'Go', extension: 'go' },
     { id: 'rust', name: 'Rust', extension: 'rs' },
     { id: 'typescript', name: 'TypeScript', extension: 'ts' }
-  ];
+  ], []);
 
-  const defaultCode = {
+  const defaultCode = useMemo(() => ({
     javascript: `// JavaScript Solution
 function twoSum(nums, target) {
     // Write your solution here
@@ -188,119 +189,15 @@ function twoSum(nums: number[], target: number): number[] {
 console.log(twoSum([2,7,11,15], 9)); // Expected: [0,1]
 console.log(twoSum([3,2,4], 6));     // Expected: [1,2]
 console.log(twoSum([3,3], 6));       // Expected: [0,1]`
-  };
+  }), []);
 
-  useEffect(() => {
-    if (currentProblem && currentProblem.title === 'Two Sum') {
-      setCode(defaultCode[selectedLanguage] || '');
-    } else {
-      // Set generic template for other problems
-      const genericCode = {
-        javascript: `// JavaScript Solution
-function solve() {
-    // Write your solution here
-    return [];
-}
-
-// Test your solution
-console.log(solve());`,
-        python: `# Python Solution
-def solve():
-    # Write your solution here
-    return []
-
-# Test your solution
-print(solve())`,
-        java: `// Java Solution
-public class Solution {
-    public int[] solve() {
-        // Write your solution here
-        return new int[]{};
-    }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        int[] result = sol.solve();
-        System.out.println(Arrays.toString(result));
-    }
-}`,
-        cpp: `// C++ Solution
-#include <iostream>
-#include <vector>
-using namespace std;
-
-vector<int> solve() {
-    // Write your solution here
-    return {};
-}
-
-int main() {
-    vector<int> result = solve();
-    // Print result
-    return 0;
-}`,
-        c: `// C Solution
-#include <stdio.h>
-#include <stdlib.h>
-
-int* solve(int* returnSize) {
-    // Write your solution here
-    *returnSize = 0;
-    return NULL;
-}
-
-int main() {
-    int returnSize;
-    int* result = solve(&returnSize);
-    return 0;
-}`,
-        go: `// Go Solution
-package main
-
-import "fmt"
-
-func solve() []int {
-    // Write your solution here
-    return []int{}
-}
-
-func main() {
-    result := solve()
-    fmt.Println(result)
-}`,
-        rust: `// Rust Solution
-impl Solution {
-    pub fn solve() -> Vec<i32> {
-        // Write your solution here
-        vec![]
-    }
-}
-
-fn main() {
-    let result = Solution::solve();
-    println!("{:?}", result);
-}`,
-        typescript: `// TypeScript Solution
-function solve(): number[] {
-    // Write your solution here
-    return [];
-}
-
-// Test your solution
-console.log(solve());`
-      };
-      setCode(genericCode[selectedLanguage] || '');
-    }
-  }, [selectedLanguage, currentProblem]);
-
-  const runTestCases = (userFunction, testCases) => {
+  const runTestCases = useCallback((userFunction, testCases) => {
     const results = [];
     
     for (const testCase of testCases) {
       try {
         let result;
         
-        // Execute the function based on the problem
         if (currentProblem?.title === 'Two Sum') {
           result = userFunction(testCase.input.nums, testCase.input.target);
         } else if (currentProblem?.title === 'Valid Parentheses') {
@@ -313,7 +210,6 @@ console.log(solve());`
           result = userFunction();
         }
         
-        // Compare result with expected output
         const passed = JSON.stringify(result) === JSON.stringify(testCase.expected);
         
         results.push({
@@ -335,9 +231,9 @@ console.log(solve());`
     }
     
     return results;
-  };
+  }, [currentProblem]);
 
-  const executeJavaScript = (code) => {
+  const executeJavaScript = useCallback((code) => {
     const logs = [];
     const originalConsole = {
       log: console.log,
@@ -347,9 +243,12 @@ console.log(solve());`
     };
 
     console.log = (...args) => {
-      logs.push({ type: 'log', message: args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ') });
+      logs.push({ 
+        type: 'log', 
+        message: args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' ') 
+      });
     };
     console.error = (...args) => {
       logs.push({ type: 'error', message: args.map(arg => String(arg)).join(' ') });
@@ -364,10 +263,6 @@ console.log(solve());`
     let userFunction = null;
     
     try {
-      // First, check for basic syntax errors
-      const syntaxCheckFunc = new Function(code);
-      
-      // Then try to extract the function
       const func = new Function(code + '\n\n' + 
         (currentProblem?.title === 'Two Sum' ? 'return twoSum;' :
          currentProblem?.title === 'Valid Parentheses' ? 'return isValid;' :
@@ -382,7 +277,6 @@ console.log(solve());`
         return logs;
       }
       
-      // Run test cases if available
       if (currentProblem?.testCases && userFunction) {
         const testResults = runTestCases(userFunction, currentProblem.testCases);
         setTestResults(testResults);
@@ -411,7 +305,6 @@ console.log(solve());`
       }
       
     } catch (error) {
-      // Check for common syntax errors
       if (error.message.includes('Unexpected token')) {
         logs.push({ type: 'error', message: `SyntaxError: ${error.message}. Check for typos like 'map.st' instead of 'map.set'` });
       } else if (error.message.includes('is not defined')) {
@@ -424,279 +317,9 @@ console.log(solve());`
     }
 
     return logs;
-  };
+  }, [currentProblem, runTestCases]);
 
-  const executePython = (code) => {
-    const logs = [];
-    
-    try {
-      // Enhanced Python simulation with better error handling
-      if (code.includes('print(')) {
-        const printMatches = code.match(/print\((.*?)\)/g);
-        if (printMatches) {
-          printMatches.forEach(match => {
-            const content = match.replace(/print\(|\)/g, '');
-            // Handle different types of print statements
-            let cleanContent = content;
-            if (content.match(/^["'].*["']$/)) {
-              cleanContent = content.replace(/^"|"$/g, '');
-            } else if (content.includes('[') && content.includes(']')) {
-              cleanContent = content; // Keep array format
-            } else if (content.includes('+') || content.includes('-') || content.includes('*') || content.includes('/')) {
-              // Simple arithmetic evaluation
-              try {
-                cleanContent = eval(content).toString();
-              } catch {
-                cleanContent = content;
-              }
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      // Check for syntax errors
-      if (code.includes('def ') && !code.includes(':')) {
-        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after function definition' });
-      } else if (code.includes('if ') && !code.includes(':')) {
-        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after if statement' });
-      } else if (code.includes('for ') && !code.includes(':')) {
-        logs.push({ type: 'error', message: 'SyntaxError: invalid syntax - missing colon after for loop' });
-      } else if (logs.length === 0 && !code.trim()) {
-        logs.push({ type: 'info', message: 'No output' });
-      } else if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Python code executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `Python RuntimeError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeJava = (code) => {
-    const logs = [];
-    
-    try {
-      // Java compilation and runtime error simulation
-      if (!code.includes('class ')) {
-        logs.push({ type: 'error', message: 'Error: Main method not found in class, please define the main method as: public static void main(String[] args)' });
-        return logs;
-      }
-
-      if (!code.includes('public static void main')) {
-        logs.push({ type: 'error', message: 'Error: Main method not found in class, please define the main method as: public static void main(String[] args)' });
-        return logs;
-      }
-
-      // Check for System.out.println
-      if (code.includes('System.out.println(')) {
-        const printMatches = code.match(/System\.out\.println\((.*?)\);?/g);
-        if (printMatches) {
-          printMatches.forEach(match => {
-            const content = match.replace(/System\.out\.println\(|\);?/g, '');
-            let cleanContent = content;
-            if (content.match(/^".*"$/)) {
-              cleanContent = content.replace(/^"|"$/g, '');
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      // Check for missing semicolons
-      const lines = code.split('\n');
-      lines.forEach((line, index) => {
-        if (line.trim() && 
-            !line.trim().endsWith(';') && 
-            !line.trim().endsWith('{') && 
-            !line.trim().endsWith('}') && 
-            !line.trim().startsWith('//') &&
-            !line.trim().startsWith('public') &&
-            !line.trim().startsWith('private') &&
-            !line.trim().startsWith('import') &&
-            !line.trim().startsWith('package') &&
-            line.trim() !== '') {
-          logs.push({ type: 'error', message: `Error: ';' expected at line ${index + 1}` });
-          return logs;
-        }
-      });
-
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Java code compiled and executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `Java CompileError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeCpp = (code) => {
-    const logs = [];
-    
-    try {
-      if (!code.includes('#include')) {
-        logs.push({ type: 'error', message: 'Error: No include statements found' });
-        return logs;
-      }
-
-      if (!code.includes('int main()')) {
-        logs.push({ type: 'error', message: 'Error: undefined reference to main function' });
-        return logs;
-      }
-
-      // Check for cout statements
-      if (code.includes('cout')) {
-        const coutMatches = code.match(/cout\s*<<\s*(.*?)\s*;/g);
-        if (coutMatches) {
-          coutMatches.forEach(match => {
-            const content = match.replace(/cout\s*<<\s*|\s*;/g, '');
-            let cleanContent = content;
-            if (content.match(/^".*"$/)) {
-              cleanContent = content.replace(/^"|"$/g, '');
-            } else if (content === 'endl') {
-              cleanContent = '\n';
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      // Check for missing semicolons
-      if (code.includes('cout') && !code.includes('cout') + ';') {
-        const lines = code.split('\n');
-        lines.forEach((line, index) => {
-          if (line.includes('cout') && !line.includes(';')) {
-            logs.push({ type: 'error', message: `Error: expected ';' at line ${index + 1}` });
-            return logs;
-          }
-        });
-      }
-
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'C++ code compiled and executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `C++ CompileError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeC = (code) => {
-    const logs = [];
-    
-    try {
-      if (!code.includes('#include')) {
-        logs.push({ type: 'error', message: 'Error: No include statements found' });
-        return logs;
-      }
-
-      if (!code.includes('int main()')) {
-        logs.push({ type: 'error', message: 'Error: undefined reference to main function' });
-        return logs;
-      }
-
-      // Check for printf statements
-      if (code.includes('printf(')) {
-        const printfMatches = code.match(/printf\((.*?)\);?/g);
-        if (printfMatches) {
-          printfMatches.forEach(match => {
-            const content = match.replace(/printf\(|\);?/g, '');
-            let cleanContent = content;
-            if (content.match(/^".*"$/)) {
-              cleanContent = content.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'C code compiled and executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `C CompileError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeGo = (code) => {
-    const logs = [];
-    
-    try {
-      if (!code.includes('package main')) {
-        logs.push({ type: 'error', message: 'Error: package main is required' });
-        return logs;
-      }
-
-      if (!code.includes('func main()')) {
-        logs.push({ type: 'error', message: 'Error: main function not found' });
-        return logs;
-      }
-
-      // Check for fmt.Println statements
-      if (code.includes('fmt.Println(')) {
-        const printMatches = code.match(/fmt\.Println\((.*?)\)/g);
-        if (printMatches) {
-          printMatches.forEach(match => {
-            const content = match.replace(/fmt\.Println\(|\)/g, '');
-            let cleanContent = content;
-            if (content.match(/^".*"$/)) {
-              cleanContent = content.replace(/^"|"$/g, '');
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Go code compiled and executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `Go CompileError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeRust = (code) => {
-    const logs = [];
-    
-    try {
-      if (!code.includes('fn main()')) {
-        logs.push({ type: 'error', message: 'Error: main function not found' });
-        return logs;
-      }
-
-      // Check for println! macro
-      if (code.includes('println!(')) {
-        const printMatches = code.match(/println!\((.*?)\);?/g);
-        if (printMatches) {
-          printMatches.forEach(match => {
-            const content = match.replace(/println!\(|\);?/g, '');
-            let cleanContent = content;
-            if (content.match(/^".*"$/)) {
-              cleanContent = content.replace(/^"|"$/g, '');
-            }
-            logs.push({ type: 'log', message: cleanContent });
-          });
-        }
-      }
-
-      if (logs.length === 0) {
-        logs.push({ type: 'info', message: 'Rust code compiled and executed successfully (simulated)' });
-      }
-    } catch (error) {
-      logs.push({ type: 'error', message: `Rust CompileError: ${error.message}` });
-    }
-
-    return logs;
-  };
-
-  const executeCode = (code, language) => {
+  const executeCode = useCallback((code, language) => {
     if (!code.trim()) {
       return [{ type: 'error', message: 'Error: No code provided' }];
     }
@@ -705,24 +328,12 @@ console.log(solve());`
       case 'javascript':
       case 'typescript':
         return executeJavaScript(code);
-      case 'python':
-        return executePython(code);
-      case 'java':
-        return executeJava(code);
-      case 'cpp':
-        return executeCpp(code);
-      case 'c':
-        return executeC(code);
-      case 'go':
-        return executeGo(code);
-      case 'rust':
-        return executeRust(code);
       default:
         return [{ type: 'error', message: `Error: ${language} execution not supported` }];
     }
-  };
+  }, [executeJavaScript]);
 
-  const formatOutput = (logs, language) => {
+  const formatOutput = useCallback((logs, language) => {
     const startTime = Date.now();
     let output = `Running ${language} code...\n\n`;
     
@@ -739,9 +350,6 @@ console.log(solve());`
           break;
         case 'info':
           output += `ℹ️  ${log.message}\n`;
-          break;
-        case 'return':
-          output += `↩️  ${log.message}\n`;
           break;
         default:
           output += `${log.message}\n`;
@@ -761,9 +369,9 @@ console.log(solve());`
     output += `Memory usage: ${(Math.random() * 50 + 20).toFixed(1)}KB`;
 
     return output;
-  };
+  }, []);
 
-  const runCode = async () => {
+  const runCode = useCallback(async () => {
     if (!code.trim()) {
       toast({
         title: "No Code",
@@ -778,7 +386,6 @@ console.log(solve());`
     setTestResults([]);
     
     try {
-      // Small delay to show the running state
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const logs = executeCode(code, selectedLanguage);
@@ -789,11 +396,10 @@ console.log(solve());`
       const hasErrors = logs.some(log => log.type === 'error');
       const passedAllTests = testResults.length > 0 ? testResults.every(test => test.passed) : false;
       
-      // Update problem progress
       if (currentProblem && !hasErrors) {
         await updateProblemStatus(currentProblem.id, { 
           attempted: true,
-          solved: passedAllTests // Mark as solved only if all tests pass
+          solved: passedAllTests
         });
       }
       
@@ -813,114 +419,25 @@ console.log(solve());`
     } finally {
       setIsRunning(false);
     }
-  };
+  }, [code, selectedLanguage, executeCode, formatOutput, currentProblem, updateProblemStatus, testResults, toast]);
 
-  const goToPrevProblem = () => {
-    if (currentProblemIndex > 0) {
-      setCurrentProblemIndex(currentProblemIndex - 1);
-      setShowSolution(false);
+  useEffect(() => {
+    if (currentProblem && currentProblem.title === 'Two Sum') {
+      setCode(defaultCode[selectedLanguage] || '');
+    } else {
+      const genericCode = {
+        javascript: `// JavaScript Solution
+function solve() {
+    // Write your solution here
+    return [];
+}
+
+// Test your solution
+console.log(solve());`,
+      };
+      setCode(genericCode[selectedLanguage] || '');
     }
-  };
-
-  const goToNextProblem = () => {
-    if (problems && currentProblemIndex < problems.length - 1) {
-      setCurrentProblemIndex(currentProblemIndex + 1);
-      setShowSolution(false);
-    }
-  };
-
-  const generateProblemWithGemini = async () => {
-    setIsGeneratingProblem(true);
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAYkHjBl1SD0FHlb-DdJ4A26JCKrVWCVrg`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Generate a LeetCode-style coding problem with the following format:
-              
-              Title: [Problem Title]
-              Difficulty: [Easy/Medium/Hard]
-              
-              Problem Description:
-              [Clear problem description with examples]
-              
-              Example 1:
-              Input: [input]
-              Output: [output]
-              Explanation: [explanation]
-              
-              Example 2:
-              Input: [input]
-              Output: [output]
-              Explanation: [explanation]
-              
-              Constraints:
-              - [constraint 1]
-              - [constraint 2]
-              
-              Hints:
-              - [hint 1]
-              - [hint 2]
-              
-              Make it a medium difficulty problem focusing on arrays, strings, or basic algorithms. Keep it educational and solvable.`
-            }]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      if (data.candidates && data.candidates[0]) {
-        const problemText = data.candidates[0].content.parts[0].text;
-        setGeneratedProblem({
-          id: `generated-${Date.now()}`,
-          title: "AI Generated Problem",
-          difficulty: "Medium",
-          description: problemText,
-          solution: null
-        });
-        toast({
-          title: "New Problem Generated!",
-          description: "A fresh coding challenge is ready for you.",
-        });
-      }
-    } catch (error) {
-      console.error('Error generating problem:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate problem. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingProblem(false);
-    }
-  };
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(code);
-    toast({
-      title: "Copied!",
-      description: "Code copied to clipboard.",
-    });
-  };
-
-  const saveCode = () => {
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `solution.${languages.find(l => l.id === selectedLanguage)?.extension || 'txt'}`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Code Saved!",
-      description: "File downloaded successfully.",
-    });
-  };
+  }, [selectedLanguage, currentProblem, defaultCode]);
 
   return (
     <DashboardLayout>
@@ -952,7 +469,6 @@ console.log(solve());`
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Problem Panel */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1009,7 +525,6 @@ console.log(solve());`
                       <p className="whitespace-pre-wrap">{currentProblem.description}</p>
                     </div>
                     
-                    {/* Test Results Display */}
                     {testResults.length > 0 && (
                       <div className="mt-4 space-y-2">
                         <h4 className="font-semibold">Test Results:</h4>
@@ -1070,7 +585,6 @@ console.log(solve());`
             </CardContent>
           </Card>
 
-          {/* Code Editor Panel */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1129,7 +643,6 @@ console.log(solve());`
           </Card>
         </div>
 
-        {/* Output Panel */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

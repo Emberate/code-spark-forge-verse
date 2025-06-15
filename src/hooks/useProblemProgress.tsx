@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,28 +13,26 @@ export interface ProblemStatus {
 export const useProblemProgress = () => {
   const { user } = useAuth();
   const [problemStatuses, setProblemStatuses] = useState<Record<string, ProblemStatus>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadProgressFromDatabase = useCallback(async () => {
     if (!user) return;
 
-    // Load problem progress from localStorage as fallback
-    const savedProgress = localStorage.getItem(`problem-progress-${user.id}`);
-    if (savedProgress) {
-      setProblemStatuses(JSON.parse(savedProgress));
-    }
-
-    // Load from database if available
-    loadProgressFromDatabase();
-  }, [user]);
-
-  const loadProgressFromDatabase = async () => {
-    if (!user) return;
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const { data: activities } = await supabase
+      const { data: activities, error: dbError } = await supabase
         .from('user_activities')
         .select('*')
         .eq('user_id', user.id);
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+        setError('Failed to load progress from database');
+        return;
+      }
 
       if (activities) {
         const statusMap: Record<string, ProblemStatus> = {};
@@ -57,11 +55,39 @@ export const useProblemProgress = () => {
       }
     } catch (error) {
       console.error('Error loading progress from database:', error);
+      setError('Unexpected error occurred while loading progress');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateProblemStatus = async (problemId: string, status: Partial<ProblemStatus>) => {
-    if (!user) return;
+  useEffect(() => {
+    if (!user) {
+      setProblemStatuses({});
+      return;
+    }
+
+    // Load problem progress from localStorage as fallback
+    const savedProgress = localStorage.getItem(`problem-progress-${user.id}`);
+    if (savedProgress) {
+      try {
+        const parsed = JSON.parse(savedProgress);
+        setProblemStatuses(parsed);
+      } catch (error) {
+        console.error('Error parsing saved progress:', error);
+        localStorage.removeItem(`problem-progress-${user.id}`);
+      }
+    }
+
+    // Load from database
+    loadProgressFromDatabase();
+  }, [user, loadProgressFromDatabase]);
+
+  const updateProblemStatus = useCallback(async (problemId: string, status: Partial<ProblemStatus>) => {
+    if (!user) {
+      console.warn('Cannot update problem status: user not authenticated');
+      return;
+    }
 
     const newStatus = {
       ...problemStatuses[problemId],
@@ -77,30 +103,47 @@ export const useProblemProgress = () => {
     setProblemStatuses(updatedStatuses);
     
     // Save to localStorage
-    localStorage.setItem(`problem-progress-${user.id}`, JSON.stringify(updatedStatuses));
+    try {
+      localStorage.setItem(`problem-progress-${user.id}`, JSON.stringify(updatedStatuses));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
 
     // Save to database
     try {
       const activityType = status.solved ? 'solved' : 'attempted';
-      await supabase
+      const { error: dbError } = await supabase
         .from('user_activities')
         .insert({
           user_id: user.id,
           problem_id: problemId,
           activity_type: activityType
         });
+
+      if (dbError) {
+        console.error('Error saving progress to database:', dbError);
+        setError('Failed to save progress to database');
+      }
     } catch (error) {
       console.error('Error saving progress to database:', error);
+      setError('Unexpected error occurred while saving progress');
     }
-  };
+  }, [user, problemStatuses]);
 
-  const getProblemStatus = (problemId: string): ProblemStatus => {
+  const getProblemStatus = useCallback((problemId: string): ProblemStatus => {
     return problemStatuses[problemId] || { solved: false, attempted: false };
-  };
+  }, [problemStatuses]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   return {
     getProblemStatus,
     updateProblemStatus,
-    problemStatuses
+    problemStatuses,
+    isLoading,
+    error,
+    clearError
   };
 };
