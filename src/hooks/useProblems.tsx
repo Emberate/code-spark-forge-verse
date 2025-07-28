@@ -31,7 +31,7 @@ export const useProblem = (problemId?: string) => {
         .from('problems')
         .select('*')
         .eq('id', problemId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
